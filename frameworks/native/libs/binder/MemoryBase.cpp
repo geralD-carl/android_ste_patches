@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "MemoryBase"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -24,6 +25,10 @@
 namespace android {
 
 // ---------------------------------------------------------------------------
+
+#ifdef STE_HARDWARE
+extern "C" void _ZN7android10MemoryBaseC2ERKNS_2spINS_11IMemoryHeapEEElj() __attribute__((alias("_ZN7android10MemoryBaseC1ERKNS_2spINS_11IMemoryHeapEEElj")));
+#endif
 
 MemoryBase::MemoryBase(const sp<IMemoryHeap>& heap,
         ssize_t offset, size_t size)
@@ -59,3 +64,11 @@ sp<IMemoryHeap> android::MemoryBase::getMemory(long* offset, unsigned int* size)
 
 // ---------------------------------------------------------------------------
 }; // namespace android
+
+// Backwards compatibility for libdatabase_sqlcipher (http://b/8253769).
+extern "C" void _ZN7android10MemoryBaseC1ERKNS_2spINS_11IMemoryHeapEEEij(void*, void*, ssize_t, size_t);
+extern "C" void _ZN7android10MemoryBaseC1ERKNS_2spINS_11IMemoryHeapEEElj(void* obj, void* h, long o, unsigned int size) {
+    _ZN7android10MemoryBaseC1ERKNS_2spINS_11IMemoryHeapEEEij(obj, h, o, size);
+    ALOGW("Using temporary compatibility workaround for usage of MemoryBase "
+          "private API. Please fix your application!");
+}

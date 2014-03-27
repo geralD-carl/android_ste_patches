@@ -150,9 +150,9 @@ GLConsumer::GLConsumer(const sp<IGraphicBufferConsumer>& bq, uint32_t tex,
         copybit_open(module, &mBlitEngine);
     }
     ALOGE_IF(!mBlitEngine, "\nCannot open copybit mBlitEngine=%p", mBlitEngine);
-
-    sp<ISurfaceComposer> composer(ComposerService::getComposerService());
-    mGraphicBufferAlloc = composer->createGraphicBufferAlloc();
+ 
+   sp<ISurfaceComposer> composer(ComposerService::getComposerService());
+          mGraphicBufferAlloc = composer->createGraphicBufferAlloc();
     if (mGraphicBufferAlloc == 0) {
         ST_LOGE("createGraphicBufferAlloc() failed in SurfaceTexture()");
     }
@@ -374,7 +374,6 @@ status_t GLConsumer::releaseBufferLocked(int buf,
     return err;
 }
 
-
 #ifdef STE_HARDWARE
 bool GLConsumer::stillTracking(int slot,
         const sp<GraphicBuffer> graphicBuffer) {
@@ -429,7 +428,6 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferQueue::BufferItem& item)
         }
         /* test if source and convert buffer size are ok */
         if (mSlots[buf].mGraphicBuffer != NULL && mBlitSlots[mNextBlitSlot] != NULL) {
-
             sp<GraphicBuffer> srcBuf = mSlots[buf].mGraphicBuffer;
             sp<GraphicBuffer> dstBuf = mBlitSlots[mNextBlitSlot];
             if (srcBuf->getWidth() != dstBuf->getWidth() || srcBuf->getHeight() != dstBuf->getHeight()) {
@@ -1259,3 +1257,4 @@ static void mtxMul(float out[16], const float a[16], const float b[16]) {
 }
 
 }; // namespace android
+

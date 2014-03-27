@@ -1,0 +1,371 @@
+diff --git a/frameworks/av/camera/CameraParameters.cpp b/frameworks/av/camera/CameraParameters.cpp
+index af091f4..a1d3865 100644
+--- a/frameworks/av/camera/CameraParameters.cpp
++++ b/frameworks/av/camera/CameraParameters.cpp
+@@ -172,6 +172,33 @@ const char CameraParameters::FOCUS_MODE_CONTINUOUS_PICTURE[] = "continuous-pictu
+ const char CameraParameters::LIGHTFX_LOWLIGHT[] = "low-light";
+ const char CameraParameters::LIGHTFX_HDR[] = "high-dynamic-range";
+ 
++#ifdef STE_HARDWARE
++const char CameraParameters::SCENE_MODE_BACKLIGHT[] = "backlight";
++const char CameraParameters::SCENE_MODE_DUSKDAWN[] = "duskdawn";
++const char CameraParameters::SCENE_MODE_FALLCOLOR[] = "fallcolor";
++const char CameraParameters::SCENE_MODE_TEXT[] = "text";
++const char CameraParameters::PIXEL_FORMAT_YUV420SPNV12[] = "yuv420spnv12";
++const char CameraParameters::PIXEL_FORMAT_YUV420MB[] = "yuv420mb";
++const char CameraParameters::PIXEL_FORMAT_YVU422SP[] = "yvu422sp";
++const char CameraParameters::PIXEL_FORMAT_YVU422P[] = "yvu422p";
++const char CameraParameters::PIXEL_FORMAT_YVU420SP[] = "yvu420sp";
++const char CameraParameters::PIXEL_FORMAT_YVU420P[]  = "yvu420p";
++const char CameraParameters::FOCUS_MODE_FACEDETECT[] = "facedetect";
++const char CameraParameters::FOCUS_MODE_TOUCHAF[] = "touchaf";
++const char CameraParameters::ISO_50[] = "ISO50";
++const char CameraParameters::KEY_ANTI_SHAKE_MODE[] = "antishake";
++const char CameraParameters::KEY_AUTO_CONTRAST[] = "auto-contrast";
++const char CameraParameters::KEY_BEAUTY_MODE[] = "beauty";
++const char CameraParameters::KEY_BLUR_MODE[] = "blur";
++const char CameraParameters::KEY_VINTAGE_MODE[] = "vintagemode";
++const char CameraParameters::KEY_WDR_MODE[] = "wdr";
++const char CameraParameters::VINTAGE_MODE_BNW[] = "bnw";
++const char CameraParameters::VINTAGE_MODE_COOL[] = "cool";
++const char CameraParameters::VINTAGE_MODE_NORMAL[] = "normal";
++const char CameraParameters::VINTAGE_MODE_OFF[] = "off";
++const char CameraParameters::VINTAGE_MODE_WARM[] = "warm";
++#endif
++
+ CameraParameters::CameraParameters()
+                 : mMap()
+ {
+@@ -233,6 +260,11 @@ void CameraParameters::unflatten(const String8 &params)
+     }
+ }
+ 
++#ifdef STE_HARDWARE
++// keys for record stride and sliceheight
++const char CameraParameters::KEY_RECORD_STRIDE[] = "record-stride";
++const char CameraParameters::KEY_RECORD_SLICE_HEIGHT[] = "record-slice-height";
++#endif
+ 
+ void CameraParameters::set(const char *key, const char *value)
+ {
+diff --git a/frameworks/av/include/camera/CameraParameters.h b/frameworks/av/include/camera/CameraParameters.h
+index d521543..18cf771 100644
+--- a/frameworks/av/include/camera/CameraParameters.h
++++ b/frameworks/av/include/camera/CameraParameters.h
+@@ -674,6 +674,38 @@ public:
+     // High-dynamic range mode
+     static const char LIGHTFX_HDR[];
+ 
++#ifdef STE_HARDWARE
++    // keys for record stride and slice height
++    static const char KEY_RECORD_STRIDE[];
++    static const char KEY_RECORD_SLICE_HEIGHT[];
++    static const char PIXEL_FORMAT_YUV420SPNV12[]; // NV12
++    static const char PIXEL_FORMAT_YVU422SP[];
++    static const char PIXEL_FORMAT_YVU422P[];
++    static const char PIXEL_FORMAT_YVU420SP[];
++    static const char PIXEL_FORMAT_YVU420P[];
++    static const char PIXEL_FORMAT_YUV420MB[];
++    static const char FOCUS_MODE_FACEDETECT[];
++    static const char FOCUS_MODE_TOUCHAF[];
++    static const char ISO_50[];
++    static const char KEY_ANTI_SHAKE_MODE[];
++    static const char KEY_AUTO_CONTRAST[];
++    static const char KEY_BEAUTY_MODE[];
++    static const char KEY_BLUR_MODE[];
++    static const char KEY_VINTAGE_MODE[];
++    static const char KEY_WDR_MODE[];
++    static const char VINTAGE_MODE_BNW[];
++    static const char VINTAGE_MODE_COOL[];
++    static const char VINTAGE_MODE_NORMAL[];
++    static const char VINTAGE_MODE_OFF[];
++    static const char VINTAGE_MODE_WARM[];
++    static const char SCENE_MODE_DUSKDAWN[];
++    static const char SCENE_MODE_FALL[];
++    static const char SCENE_MODE_FALL_COLOR[];
++    static const char SCENE_MODE_BACKLIGHT[];
++    static const char SCENE_MODE_FALLCOLOR[];
++    static const char SCENE_MODE_TEXT[];
++#endif
++
+ private:
+     DefaultKeyedVector<String8,String8>    mMap;
+ };
+diff --git a/frameworks/av/include/media/AudioParameter.h b/frameworks/av/include/media/AudioParameter.h
+index 891bc4b..263ace7 100644
+--- a/frameworks/av/include/media/AudioParameter.h
++++ b/frameworks/av/include/media/AudioParameter.h
+@@ -48,6 +48,9 @@ public:
+     static const char * const keyFrameCount;
+     static const char * const keyInputSource;
+     static const char * const keyScreenState;
++#ifdef STE_AUDIO
++    static const char *keySinkLatency;
++#endif
+ 
+     String8 toString();
+ 
+diff --git a/frameworks/av/include/media/AudioRecord.h b/frameworks/av/include/media/AudioRecord.h
+index 052064d..2251fa0 100644
+--- a/frameworks/av/include/media/AudioRecord.h
++++ b/frameworks/av/include/media/AudioRecord.h
+@@ -493,6 +493,10 @@ private:
+ 
+     bool                    mInOverrun;         // whether recorder is currently in overrun state
+ 
++#ifdef STE_AUDIO
++    audio_input_clients     *mpInputClientId;
++#endif
++
+ private:
+     class DeathNotifier : public IBinder::DeathRecipient {
+     public:
+diff --git a/frameworks/av/include/media/AudioSystem.h b/frameworks/av/include/media/AudioSystem.h
+index 4c22412..270a92d 100644
+--- a/frameworks/av/include/media/AudioSystem.h
++++ b/frameworks/av/include/media/AudioSystem.h
+@@ -27,6 +27,9 @@
+ namespace android {
+ 
+ typedef void (*audio_error_callback)(status_t err);
++#ifdef STE_AUDIO
++typedef void (*latency_update_callback)(void *cookie, audio_io_handle_t output, uint32_t sinkLatency);
++#endif
+ 
+ class IAudioFlinger;
+ class IAudioPolicyService;
+@@ -138,6 +141,11 @@ public:
+     static void acquireAudioSessionId(int audioSession);
+     static void releaseAudioSessionId(int audioSession);
+ 
++#ifdef STE_AUDIO
++    static int registerLatencyNotificationClient(latency_update_callback cb, void *cookie, audio_io_handle_t output);
++    static void unregisterLatencyNotificationClient(int clientId);
++#endif
++
+     // types of io configuration change events received with ioConfigChanged()
+     enum io_config_event {
+         OUTPUT_OPENED,
+@@ -147,6 +155,9 @@ public:
+         INPUT_CLOSED,
+         INPUT_CONFIG_CHANGED,
+         STREAM_CONFIG_CHANGED,
++#ifdef STE_AUDIO
++        SINK_LATENCY_CHANGED,
++#endif
+         NUM_CONFIG_EVENTS
+     };
+ 
+@@ -210,7 +221,13 @@ public:
+                                     uint32_t samplingRate = 0,
+                                     audio_format_t format = AUDIO_FORMAT_DEFAULT,
+                                     audio_channel_mask_t channelMask = AUDIO_CHANNEL_IN_MONO,
++#ifdef STE_AUDIO
++                                    audio_in_acoustics_t acoustics = (audio_in_acoustics_t)0,
++                                    int sessionId = 0,
++                                    audio_input_clients *inputClientId = NULL);
++#else
+                                     int sessionId = 0);
++#endif
+     static status_t startInput(audio_io_handle_t input);
+     static status_t stopInput(audio_io_handle_t input);
+     static void releaseInput(audio_io_handle_t input);
+@@ -285,6 +302,14 @@ private:
+         virtual void binderDied(const wp<IBinder>& who);
+     };
+ 
++#ifdef STE_AUDIO
++    struct NotificationClient : public RefBase {
++        latency_update_callback mCb;
++        void *mCookie;
++        audio_io_handle_t mOutput;
++    };
++#endif
++
+     static sp<AudioFlingerClient> gAudioFlingerClient;
+     static sp<AudioPolicyServiceClient> gAudioPolicyServiceClient;
+     friend class AudioFlingerClient;
+@@ -307,6 +332,12 @@ private:
+     // list of output descriptors containing cached parameters
+     // (sampling rate, framecount, channel count...)
+     static DefaultKeyedVector<audio_io_handle_t, OutputDescriptor *> gOutputs;
++
++#ifdef STE_AUDIO
++    static Mutex gLatencyLock;
++    static int gNextUniqueLatencyId;
++    static DefaultKeyedVector<int, sp<AudioSystem::NotificationClient> > gLatencyNotificationClients;
++#endif
+ };
+ 
+ };  // namespace android
+diff --git a/frameworks/av/include/media/AudioTrack.h b/frameworks/av/include/media/AudioTrack.h
+index f6646ab..85fd225 100644
+--- a/frameworks/av/include/media/AudioTrack.h
++++ b/frameworks/av/include/media/AudioTrack.h
+@@ -59,6 +59,9 @@ public:
+                                     // (See setPositionUpdatePeriod()).
+         EVENT_BUFFER_END = 5,       // Playback head is at the end of the buffer.
+                                     // Not currently used by android.media.AudioTrack.
++#ifdef STE_AUDIO
++        EVENT_LATENCY_CHANGED = 6,   // Audio sink latency has changed.
++#endif
+         EVENT_NEW_IAUDIOTRACK = 6,  // IAudioTrack was re-created, either due to re-routing and
+                                     // voluntary invalidation by mediaserver, or mediaserver crash.
+         EVENT_STREAM_END = 7,       // Sent after all the buffers queued in AF and HW are played
+@@ -650,6 +653,11 @@ protected:
+             // FIXME enum is faster than strcmp() for parameter 'from'
+             status_t restoreTrack_l(const char *from);
+ 
++#ifdef STE_AUDIO
++            static void LatencyCallback(void *cookie, audio_io_handle_t output,
++                                 uint32_t sinkLatency);
++#endif
++
+             bool     isOffloaded() const
+                 { return (mFlags & AUDIO_OUTPUT_FLAG_COMPRESS_OFFLOAD) != 0; }
+ 
+@@ -729,6 +737,10 @@ protected:
+     int                     mPreviousPriority;          // before start()
+     SchedPolicy             mPreviousSchedulingGroup;
+     bool                    mAwaitBoost;    // thread should wait for priority boost before running
++#ifdef STE_AUDIO
++    int                     mLatencyClientId;
++#endif
++
+ 
+     // The proxy should only be referenced while a lock is held because the proxy isn't
+     // multi-thread safe, especially the SingleStateQueue part of the proxy.
+diff --git a/frameworks/av/include/media/IAudioFlinger.h b/frameworks/av/include/media/IAudioFlinger.h
+index 282f275..4a36bab 100644
+--- a/frameworks/av/include/media/IAudioFlinger.h
++++ b/frameworks/av/include/media/IAudioFlinger.h
+@@ -156,12 +156,26 @@ public:
+     virtual status_t suspendOutput(audio_io_handle_t output) = 0;
+     virtual status_t restoreOutput(audio_io_handle_t output) = 0;
+ 
++#ifdef STE_AUDIO
++    virtual uint32_t *addInputClient(uint32_t clientId) = 0;
++    virtual status_t removeInputClient(uint32_t *pClientId) = 0;
++
++    virtual audio_io_handle_t openInput(audio_module_handle_t module,
++                                        audio_devices_t *pDevices,
++                                        uint32_t *pSamplingRate,
++                                        audio_format_t *pFormat,
++                                        audio_channel_mask_t *pChannelMask,
++                                        audio_input_clients *inputClientId = NULL) = 0;
++    virtual status_t closeInput(audio_io_handle_t input,
++                                audio_input_clients *inputClientId = NULL) = 0;
++#else
+     virtual audio_io_handle_t openInput(audio_module_handle_t module,
+                                         audio_devices_t *pDevices,
+                                         uint32_t *pSamplingRate,
+                                         audio_format_t *pFormat,
+                                         audio_channel_mask_t *pChannelMask) = 0;
+     virtual status_t closeInput(audio_io_handle_t input) = 0;
++#endif
+ 
+     virtual status_t setStreamOutput(audio_stream_type_t stream, audio_io_handle_t output) = 0;
+ 
+@@ -197,6 +211,14 @@ public:
+     virtual status_t moveEffects(int session, audio_io_handle_t srcOutput,
+                                     audio_io_handle_t dstOutput) = 0;
+ 
++#ifdef STE_AUDIO
++    virtual size_t readInput(audio_io_handle_t input,
++                            audio_input_clients inputClientId,
++                            void *buffer,
++                            uint32_t bytes,
++                            uint32_t *pOverwrittenBytes) = 0;
++#endif
++
+     virtual audio_module_handle_t loadHwModule(const char *name) = 0;
+ 
+     // helpers for android.media.AudioManager.getProperty(), see description there for meaning
+diff --git a/frameworks/av/include/media/IAudioPolicyService.h b/frameworks/av/include/media/IAudioPolicyService.h
+index 09b9ea6..460efb4 100644
+--- a/frameworks/av/include/media/IAudioPolicyService.h
++++ b/frameworks/av/include/media/IAudioPolicyService.h
+@@ -66,7 +66,12 @@ public:
+                                     uint32_t samplingRate = 0,
+                                     audio_format_t format = AUDIO_FORMAT_DEFAULT,
+                                     audio_channel_mask_t channelMask = 0,
++#ifdef STE_AUDIO
++                                    int audioSession = 0,
++                                    audio_input_clients *inputClientId = NULL) = 0;
++#else
+                                     int audioSession = 0) = 0;
++#endif
+     virtual status_t startInput(audio_io_handle_t input) = 0;
+     virtual status_t stopInput(audio_io_handle_t input) = 0;
+     virtual void releaseInput(audio_io_handle_t input) = 0;
+diff --git a/frameworks/av/include/media/stagefright/ColorConverter.h b/frameworks/av/include/media/stagefright/ColorConverter.h
+index 85ba920..014fc7a 100644
+--- a/frameworks/av/include/media/stagefright/ColorConverter.h
++++ b/frameworks/av/include/media/stagefright/ColorConverter.h
+@@ -73,6 +73,11 @@ private:
+     status_t convertQCOMYUV420SemiPlanar(
+             const BitmapParams &src, const BitmapParams &dst);
+ 
++#ifdef STE_HARDWARE
++    status_t convertSTEYUV420PackedSemiPlanarMB(
++            const BitmapParams &src, const BitmapParams &dst);
++#endif
++
+     status_t convertYUV420SemiPlanar(
+             const BitmapParams &src, const BitmapParams &dst);
+ 
+diff --git a/frameworks/av/include/media/stagefright/MediaDefs.h b/frameworks/av/include/media/stagefright/MediaDefs.h
+index 85693d4..df3846e 100644
+--- a/frameworks/av/include/media/stagefright/MediaDefs.h
++++ b/frameworks/av/include/media/stagefright/MediaDefs.h
+@@ -27,8 +27,14 @@ extern const char *MEDIA_MIMETYPE_VIDEO_VP9;
+ extern const char *MEDIA_MIMETYPE_VIDEO_AVC;
+ extern const char *MEDIA_MIMETYPE_VIDEO_MPEG4;
+ extern const char *MEDIA_MIMETYPE_VIDEO_H263;
++#ifdef STE_HARDWARE
++extern const char *MEDIA_MIMETYPE_VIDEO_H263_SW;
++#endif
+ extern const char *MEDIA_MIMETYPE_VIDEO_MPEG2;
+ extern const char *MEDIA_MIMETYPE_VIDEO_RAW;
++#ifdef STE_HARDWARE
++extern const char *MEDIA_MIMETYPE_VIDEO_VC1;
++#endif
+ 
+ extern const char *MEDIA_MIMETYPE_AUDIO_AMR_NB;
+ extern const char *MEDIA_MIMETYPE_AUDIO_AMR_WB;
+diff --git a/frameworks/av/include/media/stagefright/OMXCodec.h b/frameworks/av/include/media/stagefright/OMXCodec.h
+index daaf20f..0a8fa52 100644
+--- a/frameworks/av/include/media/stagefright/OMXCodec.h
++++ b/frameworks/av/include/media/stagefright/OMXCodec.h
+@@ -86,6 +86,10 @@ struct OMXCodec : public MediaSource,
+     // from MediaBufferObserver
+     virtual void signalBufferReturned(MediaBuffer *buffer);
+ 
++#ifdef STE_HARDWARE
++    static uint32_t OmxToHALFormat(OMX_COLOR_FORMATTYPE omxValue);
++#endif
++
+     enum Quirks {
+         kNeedsFlushBeforeDisable              = 1,
+         kWantsNALFragments                    = 2,
+@@ -100,6 +104,9 @@ struct OMXCodec : public MediaSource,
+         kSupportsMultipleFramesPerInputBuffer = 1024,
+         kRequiresLargerEncoderOutputBuffer    = 2048,
+         kOutputBuffersAreUnreadable           = 4096,
++#ifdef STE_HARDWARE
++        kRequiresStoreMetaDataBeforeIdle      = 16384,
++#endif
+     };
+ 
+     struct CodecNameAndQuirks {
+diff --git a/frameworks/av/include/private/media/AudioTrackShared.h b/frameworks/av/include/private/media/AudioTrackShared.h
+index 2d033e6..ac970e7 100644
+--- a/frameworks/av/include/private/media/AudioTrackShared.h
++++ b/frameworks/av/include/private/media/AudioTrackShared.h
+@@ -106,6 +106,11 @@ struct audio_track_cblk_t
+                                         // up (V) by server or binderDied() or interrupt()
+ #define CBLK_FUTEX_WAKE 1               // if event flag bit is set, then a deferred wake is pending
+ 
++                // if there is a shared buffer, "buffers" is the value of pointer() for the shared
++                // buffer, otherwise "buffers" points immediately after the control block
++      

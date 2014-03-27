@@ -102,7 +102,6 @@ public:
     status_t            writeStrongBinder(const sp<IBinder>& val);
     status_t            writeWeakBinder(const wp<IBinder>& val);
     status_t            writeInt32Array(size_t len, const int32_t *val);
-
     status_t            write(const Flattenable& val);
 
     template<typename T>
@@ -158,7 +157,6 @@ public:
     const char16_t*     readString16Inplace(size_t* outLen) const;
     sp<IBinder>         readStrongBinder() const;
     wp<IBinder>         readWeakBinder() const;
-
     status_t            read(Flattenable& val) const;
 
     template<typename T>
